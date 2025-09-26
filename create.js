@@ -89,10 +89,10 @@
   const carImageAngle = document.getElementById('carImageAngle');
 
   const VEHICLE_SPRITES = {
-    formula:    { src: 'images/formula.png',    w: 90,  h: 190 },
-    rally:      { src: 'images/rally.png',      w: 110, h: 200 },
-    snowmobile: { src: 'images/snowmobile.png', w: 80,  h: 220 },
-    truck:      { src: 'images/truck.png',      w: 100, h: 280 }
+    formula:    { src: rel('images/formula.png'),    w: 90,  h: 190 },
+    rally:      { src: rel('images/rally.png'),      w: 110, h: 200 },
+    snowmobile: { src: rel('images/snowmobile.png'), w: 80,  h: 220 },
+    truck:      { src: rel('images/truck.png'),      w: 100, h: 280 }
   };
 
   const VEHICLE_TYPES = {
@@ -479,3 +479,4 @@
   if (cCustomLen && !cCustomLen.value) cCustomLen.value = '900';
   renderAll();
 })();
+
