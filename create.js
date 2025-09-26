@@ -1,5 +1,6 @@
 (function(){
 
+  // ======== Meta (color selector) ========
   const cColorSel = document.getElementById('cColor');
   const colorSwatch = document.getElementById('colorSwatch');
 
@@ -23,6 +24,7 @@
     updateSwatch();
   }
 
+  // ======== Overrides ========
   const devOverride = document.getElementById('devOverride');
   const devForm     = document.getElementById('devForm');
   const ovMaxLayers = document.getElementById('ovMaxLayers');
@@ -47,7 +49,7 @@
     if (!devForm || !devOverride) return;
     devForm.style.opacity = devOverride.checked ? '1' : '.6';
     devForm.style.pointerEvents = devOverride.checked ? 'auto' : 'none';
-
+    // Lazy query to avoid TDZ
     const degInput = document.getElementById('cCustomDeg');
     if (degInput) degInput.step = devOverride.checked ? '1' : '5';
   }
@@ -56,14 +58,16 @@
   ovMaxNodes?.addEventListener('input', () => sensorsChanged());
   applyOverrideUI();
 
+  // ======== Actions / output ========
   const outputPreview = document.getElementById('outputPreview');
   const cStatus    = document.getElementById('cStatus');
   const createBtn  = document.getElementById('createBtn');
   const fmt = (o) => { try { return JSON.stringify(o, null, 2); } catch(e){ return String(o); } };
   const setCStatus = (m) => { if (cStatus) cStatus.textContent = m || ''; };
 
+  // ======== Sensors UI ========
   const RAY_MAX = 13;
-  const createCustomRays = []; 
+  const createCustomRays = []; // [{Degrees, Length}]
 
   const cCustomDeg = document.getElementById('cCustomDeg');
   const cCustomLen = document.getElementById('cCustomLen');
@@ -76,6 +80,7 @@
   const cExtras    = () => Array.from(document.querySelectorAll('.c-extra'));
   const raysSvg    = document.getElementById('raysSvg');
 
+  // Wire extras -> recompute
   function wireExtrasListeners() {
     cExtras().forEach(cb => {
       cb.removeEventListener('change', sensorsChanged);
@@ -84,9 +89,14 @@
   }
   wireExtrasListeners();
 
+  // ======== Vehicle sprite controls (images from /images) ========
   const vehicleKind   = document.getElementById('vehicleKind');
   const carImageScale = document.getElementById('carImageScale');
   const carImageAngle = document.getElementById('carImageAngle');
+
+  // Build URLs relative to the HTML page location (GitHub Pages safe)
+  const PAGE_DIR = new URL('.', window.location.href);
+  const rel = (p) => new URL(p, PAGE_DIR).toString();
 
   const VEHICLE_SPRITES = {
     formula:    { src: rel('images/formula.png'),    w: 90,  h: 190 },
@@ -95,6 +105,7 @@
     truck:      { src: rel('images/truck.png'),      w: 100, h: 280 }
   };
 
+  // Vehicle Type mapping for JSON
   const VEHICLE_TYPES = {
     formula: 0,
     rally: 1,
@@ -106,6 +117,7 @@
   carImageScale?.addEventListener('input', sensorsChanged);
   carImageAngle?.addEventListener('input', sensorsChanged);
 
+  // ======== NN (editor) ========
   const nnSvg      = document.getElementById('nnSvg');
   const nnWarn     = document.getElementById('nnWarn');
   const nnSummary  = document.getElementById('nnSummary');
@@ -113,8 +125,9 @@
   const hiddenWrap = document.getElementById('hiddenLayers');
   const addHidden  = document.getElementById('addHidden');
 
-  const nn = { layers: [0, 12, 2] }; 
+  const nn = { layers: [0, 12, 2] }; // [input, ...hidden, 2]
 
+  // ======== Helpers ========
   const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
 
   const normDeg = (d) => {
@@ -145,9 +158,11 @@
     return null;
   }
 
+  // ======== Rays preview (reads viewBox, draws sprite, rays) ========
   function renderRaysSvg(){
     if (!raysSvg) return;
 
+    // Read dimensions from SVG's viewBox (so HTML controls size)
     const vb = raysSvg.viewBox?.baseVal || { x:0, y:0, width: 1000, height: 420 };
     const W = vb.width  || 1000;
     const H = vb.height || 420;
@@ -168,6 +183,7 @@
       </g>
     `;
 
+    // Vehicle sprite (0° up; allow rotation/scale from inputs)
     const kind  = (vehicleKind?.value || 'formula');
     const angle = Number(carImageAngle?.value || 0);
     const scale = Math.max(0.2, Math.min(3, Number(carImageScale?.value || 1)));
@@ -185,8 +201,9 @@
       `;
     }
 
+    // Rays
     createCustomRays.forEach((r) => {
-      const theta = (r.Degrees) * Math.PI / 180; 
+      const theta = (r.Degrees) * Math.PI / 180; // 0 up, +CW
       const scl = Math.max(0, Math.min(1.2, (r.Length || 0) / 900));
       const L = baseLen * (0.6 + 0.4 * scl);
       const x2 = cx + Math.sin(theta) * L;
@@ -242,6 +259,7 @@
     if (rayCountBadge) rayCountBadge.textContent = `${createCustomRays.length} ray${createCustomRays.length===1?'':'s'}`;
   }
 
+  // ======== Sensors buttons ========
   cAddRay?.addEventListener('click', () => {
     const d = Number(cCustomDeg?.value || 0);
     const l = Number(cCustomLen?.value || 900);
@@ -269,12 +287,14 @@
     sensorsChanged();
   });
 
+  // ======== Build sensors (rays + extras) ========
   function buildSensors(){
     const rays = createCustomRays.map(r => ({ "$type":"raycast", "Length": r.Length, "Degrees": r.Degrees }));
     const extras = []; cExtras().forEach(cb => { if (cb.checked) extras.push({ "$type": cb.value }); });
     return [...rays, ...extras];
   }
 
+  // ======== Hidden layers UI ========
   function renderHiddenList(){
     if (!hiddenWrap) return;
     const caps = getCaps();
@@ -321,6 +341,7 @@
   }
   addHidden?.addEventListener('click', tryAddHidden);
 
+  // ======== NN preview ========
   function renderNNSvg(){
     if (!nnSvg) return;
     const layers = nn.layers;
@@ -358,6 +379,7 @@
     nnSvg.innerHTML = `<rect class="nn-raycast" x="0" y="0" width="${W}" height="${H}" fill="transparent"></rect>` + lines + nodes;
   }
 
+  // ======== Summary / recompute ========
   function renderSummary(){
     const caps = getCaps();
     const sensors = buildSensors();
@@ -400,6 +422,7 @@
 
   function sensorsChanged(){ renderAll(); }
 
+  // ======== Export ========
   function buildZeroWeightsAndBiases(shape){
     const weights = [];
     const biases  = [];
@@ -458,7 +481,7 @@
       },
       Sensors: sensors,
       Color: Number(cColorSel?.value ?? 3),
-      Type: VEHICLE_TYPES[vehicleKind?.value] ?? 0,   
+      Type: VEHICLE_TYPES[vehicleKind?.value] ?? 0,   // vehicle -> Type
       IsUserEditable: true,
       StarsToUnlock: 0,
       Snapshots: []
@@ -472,11 +495,11 @@
       if (outputPreview) outputPreview.textContent = fmt(created);
       setCStatus('Created object');
       triggerDownload('new_ai', created);
-    } catch (e) {  }
+    } catch (e) { /* status already shown */ }
   });
 
+  // ======== Boot ========
   if (cCustomDeg && !cCustomDeg.value) cCustomDeg.value = '0';
   if (cCustomLen && !cCustomLen.value) cCustomLen.value = '900';
   renderAll();
 })();
-
