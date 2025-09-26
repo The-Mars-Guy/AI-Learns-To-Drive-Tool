@@ -75,13 +75,36 @@
   const rayCountBadge = document.getElementById('rayCountBadge');
   const cExtras    = () => Array.from(document.querySelectorAll('.c-extra'));
   const raysSvg    = document.getElementById('raysSvg');
+
   function wireExtrasListeners() {
-  cExtras().forEach(cb => {
-    cb.removeEventListener('change', sensorsChanged); 
-    cb.addEventListener('change', sensorsChanged);
-  });
-}
-wireExtrasListeners();
+    cExtras().forEach(cb => {
+      cb.removeEventListener('change', sensorsChanged);
+      cb.addEventListener('change', sensorsChanged);
+    });
+  }
+  wireExtrasListeners();
+
+  const vehicleKind   = document.getElementById('vehicleKind');
+  const carImageScale = document.getElementById('carImageScale');
+  const carImageAngle = document.getElementById('carImageAngle');
+
+  const VEHICLE_SPRITES = {
+    formula:    { src: 'images/formula.png',    w: 90,  h: 190 },
+    rally:      { src: 'images/rally.png',      w: 110, h: 200 },
+    snowmobile: { src: 'images/snowmobile.png', w: 80,  h: 220 },
+    truck:      { src: 'images/truck.png',      w: 100, h: 280 }
+  };
+
+  const VEHICLE_TYPES = {
+    formula: 0,
+    rally: 1,
+    snowmobile: 2,
+    truck: 3
+  };
+
+  vehicleKind?.addEventListener('change', sensorsChanged);
+  carImageScale?.addEventListener('input', sensorsChanged);
+  carImageAngle?.addEventListener('input', sensorsChanged);
 
   const nnSvg      = document.getElementById('nnSvg');
   const nnWarn     = document.getElementById('nnWarn');
@@ -90,13 +113,13 @@ wireExtrasListeners();
   const hiddenWrap = document.getElementById('hiddenLayers');
   const addHidden  = document.getElementById('addHidden');
 
-  const nn = { layers: [0, 12, 2] };
+  const nn = { layers: [0, 12, 2] }; 
 
   const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
 
   const normDeg = (d) => {
     let x = Math.round(Number(d||0));
-    if (getCaps().snapAngles) x = Math.round(x/5)*5; 
+    if (getCaps().snapAngles) x = Math.round(x/5)*5;
     while (x > 180) x -= 360;
     while (x < -180) x += 360;
     if (x === -180) x = 180;
@@ -124,7 +147,11 @@ wireExtrasListeners();
 
   function renderRaysSvg(){
     if (!raysSvg) return;
-    const W = 880, H = 360;
+
+    const vb = raysSvg.viewBox?.baseVal || { x:0, y:0, width: 1000, height: 420 };
+    const W = vb.width  || 1000;
+    const H = vb.height || 420;
+
     const cx = W/2, cy = H/2;
     const baseLen = Math.min(W, H) * 0.48;
 
@@ -141,10 +168,27 @@ wireExtrasListeners();
       </g>
     `;
 
+    const kind  = (vehicleKind?.value || 'formula');
+    const angle = Number(carImageAngle?.value || 0);
+    const scale = Math.max(0.2, Math.min(3, Number(carImageScale?.value || 1)));
+
+    const sprite = VEHICLE_SPRITES[kind];
+    if (sprite) {
+      const imgW = sprite.w * scale;
+      const imgH = sprite.h * scale;
+      const x = cx - imgW/2, y = cy - imgH/2;
+      g += `
+        <g transform="rotate(${angle} ${cx} ${cy})">
+          <image href="${sprite.src}" x="${x}" y="${y}" width="${imgW}" height="${imgH}"
+                 preserveAspectRatio="xMidYMid meet" opacity="0.98"></image>
+        </g>
+      `;
+    }
+
     createCustomRays.forEach((r) => {
       const theta = (r.Degrees) * Math.PI / 180; 
-      const scale = Math.max(0, Math.min(1.2, (r.Length || 0) / 900));
-      const L = baseLen * (0.6 + 0.4 * scale);
+      const scl = Math.max(0, Math.min(1.2, (r.Length || 0) / 900));
+      const L = baseLen * (0.6 + 0.4 * scl);
       const x2 = cx + Math.sin(theta) * L;
       const y2 = cy - Math.cos(theta) * L;
       g += `
@@ -153,7 +197,6 @@ wireExtrasListeners();
       `;
     });
 
-    raysSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     raysSvg.innerHTML = g;
   }
 
@@ -241,7 +284,7 @@ wireExtrasListeners();
       return;
     }
     hiddenWrap.innerHTML = hidden.map((size, i) => {
-      const idx = i + 1; 
+      const idx = i + 1;
       return `
         <div class="row tight between">
           <div class="row tight">
@@ -415,7 +458,7 @@ wireExtrasListeners();
       },
       Sensors: sensors,
       Color: Number(cColorSel?.value ?? 3),
-      Type: 0,
+      Type: VEHICLE_TYPES[vehicleKind?.value] ?? 0,   
       IsUserEditable: true,
       StarsToUnlock: 0,
       Snapshots: []
