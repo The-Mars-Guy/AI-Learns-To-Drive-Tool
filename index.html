@@ -9,7 +9,7 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <!-- ACTIONS + OUTPUT -->
+      
       <section class="section">
         <div class="row tight">
           <button id="createBtn" class="btn primary">Create .evolution</button>
@@ -18,7 +18,7 @@
         <div class="panel" id="outputPreview" aria-label="Output JSON preview" style="max-height:260px; overflow:auto"></div>
       </section>
 
-      <!-- ALLOW & OVERWRITE -->
+      
       <section class="section">
         <h2 class="h2">Allow & Overwrite</h2>
         <div class="panel">
@@ -43,14 +43,14 @@
         </div>
       </section>
 
-      <!-- NEURAL NETWORK -->
-      <!-- NEURAL NETWORK -->
+      
+      
 <section class="section">
   <h2 class="h2">Neural Network</h2>
 
-  <!-- Side-by-side: editable controls (left) + live preview (right) -->
+  
   <div class="split-2">
-    <!-- LEFT: editor UI is back -->
+    
     <div class="col">
       <div class="panel">
         <div class="row tight">
@@ -59,14 +59,14 @@
           <span class="pill warn" id="nnWarn" style="display:none"></span>
         </div>
 
-        <!-- Hidden layers controls (restored) -->
+        
         <div id="hiddenLayers" class="panel" style="margin-top:10px"></div>
         <div class="row tight" style="margin-top:8px">
           <button id="addHidden" class="btn">Add hidden layer</button>
           <span class="pill" id="nnSummary"></span>
         </div>
 
-        <!-- Extras that count toward input size -->
+        
         <div class="row tight wrap extras" style="margin-top:10px">
           <label><input type="checkbox" class="c-extra" value="angularVelocity"> angularVelocity</label>
           <label><input type="checkbox" class="c-extra" value="correctDirection"> correctDirection</label>
@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    <!-- RIGHT: network preview -->
+    
     <div class="col">
       <div class="visual-box">
         <div class="visual-title">Network preview</div>
@@ -91,13 +91,13 @@
   </div>
 </section>
 
-      <!-- SENSORS: input (left) + preview (right) -->
+      
       <section class="section">
         <h2 class="h2">Sensors</h2>
         <div class="hint">Custom raycasts only. Angle −180 → 180 (0 is up). Extras count toward input size. <strong>Max 13 rays.</strong></div>
 
         <div class="split-2">
-          <!-- LEFT: User inputs -->
+          
           <div class="col">
             <div class="row tight" style="margin-top:8px">
               <label>Degrees
@@ -122,7 +122,7 @@
             <div class="panel" id="cCustomList"></div>
           </div>
 
-          <!-- RIGHT: Rays preview (longer) -->
+          
           <div class="col">
             <div class="visual-box">
               <div class="visual-title">Rays preview (0° up, +CW, −CCW)</div>
@@ -132,7 +132,7 @@
         </div>
       </section>
 
-      <!-- META -->
+      
       <section class="section" style="display:none;">
         <h2 class="h2">Meta</h2>
         <div class="row tight">
