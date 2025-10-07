@@ -139,14 +139,21 @@
   const nnWarn        = document.getElementById('nnWarn');
   const nnSummary     = document.getElementById('nnSummary');
   const nnInputAuto   = document.getElementById('nnInputAuto');
-  const nnOutput3     = document.getElementById('nnOutput3');
+  const nnOutput3     = document.getElementById('nnOutput3'); // Handbrake
+  const nnOutput4     = document.getElementById('nnOutput4'); // Brake (new)
   const nnOutputCount = document.getElementById('nnOutputCount');
   const hiddenWrap    = document.getElementById('hiddenLayers');
   const addHidden     = document.getElementById('addHidden');
 
   const nnXavierInit  = document.getElementById('nnXavierInit');
 
-  const getOutputCount = () => (nnOutput3 && nnOutput3.checked ? 3 : 2);
+  // UPDATED: output count reflects both toggles (base 2: throttle + steer)
+  const getOutputCount = () => {
+    let count = 2;
+    if (nnOutput4?.checked) count++; // Brake
+    if (nnOutput3?.checked) count++; // Handbrake
+    return count;
+  };
 
   const nn = { layers: [0, 12, 2] }; 
 
@@ -489,7 +496,9 @@
 
   function sensorsChanged(){ renderAll(); }
 
-  nnOutput3?.addEventListener('change', sensorsChanged);
+  // Listen to both toggles
+  nnOutput3?.addEventListener('change', sensorsChanged); // Handbrake
+  nnOutput4?.addEventListener('change', sensorsChanged); // Brake
 
   nnXavierInit?.addEventListener('change', () => { previewWeights = null; previewShape = null; sensorsChanged(); });
 
@@ -535,67 +544,72 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-function createFromScratch(){
-  const caps = getCaps();
-  const sensors = buildSensors();
-  const inputCount = sensors.length;
+  function createFromScratch(){
+    const caps = getCaps();
+    const sensors = buildSensors();
+    const inputCount = sensors.length;
 
-  if (inputCount > caps.IN_MAX) {
-    setCStatus(
-      `Cannot create: input sensors (${inputCount}) exceed limit (${caps.IN_MAX}). Reduce sensors.`,
-      'danger'
-    );
-    throw new Error('input too large');
+    if (inputCount > caps.IN_MAX) {
+      setCStatus(
+        `Cannot create: input sensors (${inputCount}) exceed limit (${caps.IN_MAX}). Reduce sensors.`,
+        'danger'
+      );
+      throw new Error('input too large');
+    }
+    if (nn.layers.length > caps.LAYERS_MAX) {
+      setCStatus(
+        `Cannot create: total layers must be ≤ ${caps.LAYERS_MAX}.`,
+        'danger'
+      );
+      throw new Error('too many layers');
+    }
+    if (createCustomRays.length > RAY_MAX) {
+      setCStatus(
+        `Cannot create: max ${RAY_MAX} rays allowed.`,
+        'danger'
+      );
+      throw new Error('too many rays');
+    }
+
+    const out = getOutputCount();
+    const shape = [...nn.layers.slice(0, -1), out];
+    nn.layers[nn.layers.length - 1] = out;
+
+    let weights, biases;
+    if (nnXavierInit?.checked) {
+      ({ weights, biases } = buildXavierWeightsAndBiases(shape));
+    } else {
+      ({ weights, biases } = buildZeroWeightsAndBiases(shape));
+    }
+
+    // UPDATED: outputs array reflects individual toggles and fixed indices
+    // Base controls always present
+    let outputs = [0, 1]; // 0=throttle, 1=steer
+    if (nnOutput4?.checked) outputs.push(3); // 3=brake
+    if (nnOutput3?.checked) outputs.push(2); // 2=handbrake
+    // Order will be [0,1,3,2] if both toggles are enabled, as requested.
+
+    const obj = {
+      Id: (crypto.randomUUID ? crypto.randomUUID() : 'new-ai'),
+      Stats: { Generations: [] },
+      NeuralNetwork: {
+        Shape: shape,
+        InputShape: shape[0],
+        OutputShape: out,
+        NeuronsCount: shape.reduce((a,b)=>a+b,0),
+        Weights: weights,
+        Biases:  biases
+      },
+      Sensors: sensors,
+      Color: Number(cColorSel?.value ?? 3),
+      Type: VEHICLE_TYPES[vehicleKind?.value] ?? 0,
+      IsUserEditable: true,
+      StarsToUnlock: 0,
+      Snapshots: [],
+      Outputs: outputs
+    };
+    return obj;
   }
-  if (nn.layers.length > caps.LAYERS_MAX) {
-    setCStatus(
-      `Cannot create: total layers must be ≤ ${caps.LAYERS_MAX}.`,
-      'danger'
-    );
-    throw new Error('too many layers');
-  }
-  if (createCustomRays.length > RAY_MAX) {
-    setCStatus(
-      `Cannot create: max ${RAY_MAX} rays allowed.`,
-      'danger'
-    );
-    throw new Error('too many rays');
-  }
-
-  const out = getOutputCount();
-  const shape = [...nn.layers.slice(0, -1), out];
-  nn.layers[nn.layers.length - 1] = out;
-
-  let weights, biases;
-  if (nnXavierInit?.checked) {
-    ({ weights, biases } = buildXavierWeightsAndBiases(shape));
-  } else {
-    ({ weights, biases } = buildZeroWeightsAndBiases(shape));
-  }
-
-  const outputs = out === 3 ? [0, 1, 2] : [0, 1];
-
-  const obj = {
-    Id: (crypto.randomUUID ? crypto.randomUUID() : 'new-ai'),
-    Stats: { Generations: [] },
-    NeuralNetwork: {
-      Shape: shape,
-      InputShape: shape[0],
-      OutputShape: out,
-      NeuronsCount: shape.reduce((a,b)=>a+b,0),
-      Weights: weights,
-      Biases:  biases
-    },
-    Sensors: sensors,
-    Color: Number(cColorSel?.value ?? 3),
-    Type: VEHICLE_TYPES[vehicleKind?.value] ?? 0,
-    IsUserEditable: true,
-    StarsToUnlock: 0,
-    Snapshots: [],
-    Outputs: outputs
-  };
-  return obj;
-}
 
   const STORAGE_KEY  = 'evoCreator:v1';          
   const OUTPUT_KEY   = 'evoCreator:lastOutput';  
@@ -613,7 +627,8 @@ function createFromScratch(){
   function collectState() {
     return {
       nnLayers: [...nn.layers],
-      nnOutput3: !!nnOutput3?.checked,
+      nnOutput3: !!nnOutput3?.checked,     // Handbrake
+      nnOutput4: !!nnOutput4?.checked,     // Brake (new)
       nnXavierInit: !!nnXavierInit?.checked,     
       devOverride: !!devOverride?.checked,
       ovMaxLayers: Number(ovMaxLayers?.value || 20),
@@ -640,6 +655,7 @@ function createFromScratch(){
 
     if (Array.isArray(s.nnLayers) && s.nnLayers.length >= 2) nn.layers = [...s.nnLayers];
     if (nnOutput3) nnOutput3.checked = !!s.nnOutput3;
+    if (nnOutput4) nnOutput4.checked = !!s.nnOutput4;
     if (nnXavierInit) nnXavierInit.checked = !!s.nnXavierInit;
 
     createCustomRays.length = 0;
@@ -671,7 +687,7 @@ function createFromScratch(){
   renderAll = function(){ _renderAll(); saveStateDebounced(); };
 
   [
-    devOverride, ovMaxLayers, ovMaxNodes, nnOutput3, nnXavierInit,
+    devOverride, ovMaxLayers, ovMaxNodes, nnOutput3, nnOutput4, nnXavierInit,
     vehicleKind, carImageScale, carImageAngle, cCustomDeg, cCustomLen,
     cMirrorAdd, cMirrorAll
   ].forEach(el => el && el.addEventListener(
