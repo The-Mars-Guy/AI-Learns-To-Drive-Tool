@@ -28,7 +28,7 @@
   const ovMaxLayers = document.getElementById('ovMaxLayers');
   const ovMaxNodes  = document.getElementById('ovMaxNodes');
 
-  const DEFAULT_CAPS  = { IN_MAX: 20, H_MAX: 12, LAYERS_MAX: 8, snapAngles: true };
+  const DEFAULT_CAPS  = { IN_MAX: 20, H_MAX: 12, LAYERS_MAX: 8,  snapAngles: true };
 
   const OVERRIDE_CAPS = { IN_MAX: 20, H_MAX: 64, LAYERS_MAX: 20, snapAngles: false };
 
@@ -42,7 +42,7 @@
         H_MAX: Math.max(1, Number(ovMaxNodes?.value || OVERRIDE_CAPS.H_MAX)),
         LAYERS_MAX: Math.max(3, Number(ovMaxLayers?.value || OVERRIDE_CAPS.LAYERS_MAX)),
         snapAngles: false,
-        RAY_MAX: OVERRIDE_RAY_MAX                      
+        RAY_MAX: OVERRIDE_RAY_MAX     
       };
     }
     return { ...DEFAULT_CAPS, RAY_MAX: BASE_RAY_MAX }; 
@@ -70,15 +70,15 @@
 
   const fmt = (o) => { try { return JSON.stringify(o, null, 2); } catch(e){ return String(o); } };
   const setCStatus = (message, level = '') => {
-	  if (!cStatus) return;
-	  cStatus.textContent = message || '';
+    if (!cStatus) return;
+    cStatus.textContent = message || '';
 
-	  cStatus.classList.remove('ok', 'warn', 'danger');
+    cStatus.classList.remove('ok', 'warn', 'danger');
 
-	  if (['ok','warn','danger'].includes(level)) {
-		cStatus.classList.add(level);
-	  }
-	};
+    if (['ok','warn','danger'].includes(level)) {
+      cStatus.classList.add(level);
+    }
+  };
 
   const createCustomRays = [];
   let RAY_ID_SEQ = 1;
@@ -479,7 +479,7 @@
 
     const shape = [...nn.layers];
     const neurons = shape.reduce((a,b)=>a+b,0);
-    const connections = countConnections(shape);
+    const connections = countConnections(shape); 
 
     if (nnInputAuto) nnInputAuto.textContent = String(inputCount);
     if (nnOutputCount) nnOutputCount.textContent = String(out);
@@ -499,7 +499,7 @@
         nnWarn.textContent = '';
       }
     }
-    if (nnSummary) nnSummary.textContent = `Shape: [${shape.join(', ')}] • Layers: ${shape.length} • Neurons: ${neurons} • Connections: ${connections}`;
+    if (nnSummary) nnSummary.textContent = `Shape: [${shape.join(', ')}] • Layers: ${shape.length} • Neurons: ${neurons} • Connections: ${connections}`; 
   }
 
   function renderAll(){
@@ -609,7 +609,7 @@
         InputShape: shape[0],
         OutputShape: out,
         NeuronsCount: shape.reduce((a,b)=>a+b,0),
-        ConnectionsCount: countConnections(shape),
+        ConnectionsCount: countConnections(shape), 
         Weights: weights,
         Biases:  biases
       },
