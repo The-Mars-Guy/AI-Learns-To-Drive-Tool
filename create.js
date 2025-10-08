@@ -30,23 +30,23 @@
 
   const DEFAULT_CAPS  = { IN_MAX: 20, H_MAX: 12, LAYERS_MAX: 8,  snapAngles: true };
 
-  const OVERRIDE_CAPS = { IN_MAX: 20, H_MAX: 64, LAYERS_MAX: 20, snapAngles: false };
+  const OVERRIDE_CAPS = { IN_MAX: 999, H_MAX: 64, LAYERS_MAX: 20, snapAngles: false };
 
   const BASE_RAY_MAX     = 13;
   const OVERRIDE_RAY_MAX = 360;
 
   const getCaps = () => {
-    if (devOverride && devOverride.checked) {
-      return {
-        IN_MAX: DEFAULT_CAPS.IN_MAX,
-        H_MAX: Math.max(1, Number(ovMaxNodes?.value || OVERRIDE_CAPS.H_MAX)),
-        LAYERS_MAX: Math.max(3, Number(ovMaxLayers?.value || OVERRIDE_CAPS.LAYERS_MAX)),
-        snapAngles: false,
-        RAY_MAX: OVERRIDE_RAY_MAX     
-      };
-    }
-    return { ...DEFAULT_CAPS, RAY_MAX: BASE_RAY_MAX }; 
-  };
+	  if (devOverride && devOverride.checked) {
+		return {
+		  IN_MAX: OVERRIDE_CAPS.IN_MAX, 
+		  H_MAX: Math.max(1, Number(ovMaxNodes?.value || OVERRIDE_CAPS.H_MAX)),
+		  LAYERS_MAX: Math.max(3, Number(ovMaxLayers?.value || OVERRIDE_CAPS.LAYERS_MAX)),
+		  snapAngles: false,
+		  RAY_MAX: OVERRIDE_RAY_MAX
+		};
+	  }
+	  return { ...DEFAULT_CAPS, RAY_MAX: BASE_RAY_MAX };
+	};
 
   function applyOverrideUI(){
     if (!devForm || !devOverride) return;
