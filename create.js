@@ -449,6 +449,15 @@
     nnSvg.innerHTML = `<rect class="nn-raycast" x="0" y="0" width="${W}" height="${H}" fill="transparent"></rect>` + lines + nodes;
   }
 
+  // NEW: helper to count total fully-connected edges between layers
+  function countConnections(shape){
+    let total = 0;
+    for (let i = 0; i < shape.length - 1; i++){
+      total += (shape[i] * shape[i+1]);
+    }
+    return total;
+  }
+
   function renderSummary(){
     const caps = getCaps();
     const sensors = buildSensors();
@@ -464,6 +473,7 @@
 
     const shape = [...nn.layers];
     const neurons = shape.reduce((a,b)=>a+b,0);
+    const connections = countConnections(shape); // NEW
 
     if (nnInputAuto) nnInputAuto.textContent = String(inputCount);
     if (nnOutputCount) nnOutputCount.textContent = String(out);
@@ -483,7 +493,7 @@
         nnWarn.textContent = '';
       }
     }
-    if (nnSummary) nnSummary.textContent = `Shape: [${shape.join(', ')}] • Layers: ${shape.length} • Neurons: ${neurons}`;
+    if (nnSummary) nnSummary.textContent = `Shape: [${shape.join(', ')}] • Layers: ${shape.length} • Neurons: ${neurons} • Connections: ${connections}`; // UPDATED
   }
 
   function renderAll(){
@@ -597,6 +607,7 @@
         InputShape: shape[0],
         OutputShape: out,
         NeuronsCount: shape.reduce((a,b)=>a+b,0),
+        ConnectionsCount: countConnections(shape), // NEW: persisted in output
         Weights: weights,
         Biases:  biases
       },
