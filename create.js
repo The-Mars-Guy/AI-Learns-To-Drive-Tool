@@ -23,13 +23,17 @@
     updateSwatch();
   }
 
-  const devOverride = document.getElementById('devOverride');
+  const devOverride = document.getElementById('devOverride');   
   const devForm     = document.getElementById('devForm');
   const ovMaxLayers = document.getElementById('ovMaxLayers');
   const ovMaxNodes  = document.getElementById('ovMaxNodes');
 
-  const DEFAULT_CAPS = { IN_MAX: 20, H_MAX: 12, LAYERS_MAX: 8, snapAngles: true };
+  const DEFAULT_CAPS  = { IN_MAX: 20, H_MAX: 12, LAYERS_MAX: 8, snapAngles: true };
+
   const OVERRIDE_CAPS = { IN_MAX: 20, H_MAX: 64, LAYERS_MAX: 20, snapAngles: false };
+
+  const BASE_RAY_MAX     = 13;
+  const OVERRIDE_RAY_MAX = 360;
 
   const getCaps = () => {
     if (devOverride && devOverride.checked) {
@@ -37,10 +41,11 @@
         IN_MAX: DEFAULT_CAPS.IN_MAX,
         H_MAX: Math.max(1, Number(ovMaxNodes?.value || OVERRIDE_CAPS.H_MAX)),
         LAYERS_MAX: Math.max(3, Number(ovMaxLayers?.value || OVERRIDE_CAPS.LAYERS_MAX)),
-        snapAngles: false
+        snapAngles: false,
+        RAY_MAX: OVERRIDE_RAY_MAX                      
       };
     }
-    return { ...DEFAULT_CAPS };
+    return { ...DEFAULT_CAPS, RAY_MAX: BASE_RAY_MAX }; 
   };
 
   function applyOverrideUI(){
@@ -75,8 +80,7 @@
 	  }
 	};
 
-  const RAY_MAX = 13;
-  const createCustomRays = []; 
+  const createCustomRays = [];
   let RAY_ID_SEQ = 1;
 
   const cCustomDeg = document.getElementById('cCustomDeg');
@@ -90,7 +94,7 @@
   const cExtras    = () => Array.from(document.querySelectorAll('.c-extra'));
   const raysSvg    = document.getElementById('raysSvg');
 
-  let raySortMode = 'angle'; 
+  let raySortMode = 'angle';
   let raySortToggleBtn = null;
 
   function ensureRaySortToggle(){
@@ -139,23 +143,22 @@
   const nnWarn        = document.getElementById('nnWarn');
   const nnSummary     = document.getElementById('nnSummary');
   const nnInputAuto   = document.getElementById('nnInputAuto');
-  const nnOutput3     = document.getElementById('nnOutput3'); // Handbrake
-  const nnOutput4     = document.getElementById('nnOutput4'); // Brake (new)
+  const nnOutput3     = document.getElementById('nnOutput3'); 
+  const nnOutput4     = document.getElementById('nnOutput4'); 
   const nnOutputCount = document.getElementById('nnOutputCount');
   const hiddenWrap    = document.getElementById('hiddenLayers');
   const addHidden     = document.getElementById('addHidden');
 
   const nnXavierInit  = document.getElementById('nnXavierInit');
 
-  // UPDATED: output count reflects both toggles (base 2: throttle + steer)
   const getOutputCount = () => {
     let count = 2;
-    if (nnOutput4?.checked) count++; // Brake
-    if (nnOutput3?.checked) count++; // Handbrake
+    if (nnOutput4?.checked) count++; 
+    if (nnOutput3?.checked) count++; 
     return count;
   };
 
-  const nn = { layers: [0, 12, 2] }; 
+  const nn = { layers: [0, 12, 2] };
 
   const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
 
@@ -174,8 +177,9 @@
   }
 
   function pushRay(deg, len){
-    if (createCustomRays.length >= RAY_MAX) {
-      setCStatus(`Ray limit reached (${RAY_MAX}).`);
+    const caps = getCaps();
+    if (createCustomRays.length >= caps.RAY_MAX) {
+      setCStatus(`Ray limit reached (${caps.RAY_MAX}).`, 'warn');
       return null;
     }
     const d = normDeg(deg);
@@ -230,7 +234,7 @@
     }
 
     createCustomRays.forEach((r) => {
-      const theta = (r.Degrees) * Math.PI / 180; 
+      const theta = (r.Degrees) * Math.PI / 180;
       const scl = Math.max(0, Math.min(1.2, (r.Length || 0) / 900));
       const L = baseLen * (0.6 + 0.4 * scl);
       const x2 = cx + Math.sin(theta) * L;
@@ -245,8 +249,7 @@
   }
 
   function sortedView(){
-    if (raySortMode === 'added') return createCustomRays.slice(); 
-
+    if (raySortMode === 'added') return createCustomRays.slice();
     return createCustomRays.slice().sort((a,b)=>a.Degrees-b.Degrees || a.Length-b.Length);
   }
 
@@ -271,7 +274,7 @@
         const id  = Number(btn.getAttribute('data-id'));
         btn.addEventListener('click', () => {
           const idx = createCustomRays.findIndex(r => r.id === id);
-          if (idx === -1) return; 
+          if (idx === -1) return;
           if (act === 'del') {
             createCustomRays.splice(idx, 1);
           } else if (act === 'edit') {
@@ -283,13 +286,16 @@
             if (nl === null) return;
             const d = normDeg(Number(nd));
             const l = Math.max(0, Math.round(Number(nl)));
-            createCustomRays[idx] = { ...r, Degrees: d, Length: l }; 
+            createCustomRays[idx] = { ...r, Degrees: d, Length: l };
           }
           sensorsChanged();
         });
       });
     }
-    if (rayCountBadge) rayCountBadge.textContent = `${createCustomRays.length} ray${createCustomRays.length===1?'':'s'}`;
+    if (rayCountBadge) {
+      const caps = getCaps();
+      rayCountBadge.textContent = `${createCustomRays.length}/${caps.RAY_MAX} rays`;
+    }
   }
 
   cAddRay?.addEventListener('click', () => {
@@ -308,9 +314,10 @@
   cClearRays?.addEventListener('click', () => { createCustomRays.length = 0; sensorsChanged(); });
 
   cMirrorAll?.addEventListener('click', () => {
+    const caps = getCaps();
     const snapshot = createCustomRays.slice();
     for (const r of snapshot) {
-      if (createCustomRays.length >= RAY_MAX) break;
+      if (createCustomRays.length >= caps.RAY_MAX) break;
       const m = normDeg(-r.Degrees);
       if (!(r.Degrees === 0 || Math.abs(r.Degrees) === 180)) {
         pushRay(m, r.Length);
@@ -371,8 +378,8 @@
   }
   addHidden?.addEventListener('click', tryAddHidden);
 
-  let previewWeights = null;      
-  let previewShape   = null;      
+  let previewWeights = null;
+  let previewShape   = null;
 
   function shapesEqual(a, b){
     if (!a || !b || a.length !== b.length) return false;
@@ -384,7 +391,7 @@
     if (!nnXavierInit?.checked) { previewWeights = null; previewShape = null; return; }
     if (previewWeights && shapesEqual(previewShape, shape)) return;
     previewShape = [...shape];
-    previewWeights = buildXavierWeightsAndBiases(shape).weights; 
+    previewWeights = buildXavierWeightsAndBiases(shape).weights;
   }
 
   function renderNNSvg(){
@@ -418,11 +425,11 @@
       if (!previewWeights) return 'rgba(255,255,255,0.15)';
       const w = previewWeights[li][ri][ci];
       const sign = w >= 0 ? 1 : -1;
-      const norm = Math.min(1, Math.abs(w) / layerMaxAbs[li]);     
-      const alpha = 0.18 + 0.72 * norm;                             
+      const norm = Math.min(1, Math.abs(w) / layerMaxAbs[li]);
+      const alpha = 0.18 + 0.72 * norm;
 
-      return sign >= 0 ? `rgba(101,245,167,${alpha})`               
-                       : `rgba(255,106,106,${alpha})`;              
+      return sign >= 0 ? `rgba(101,245,167,${alpha})`
+                       : `rgba(255,106,106,${alpha})`;
     };
 
     let lines = '', nodes = '';
@@ -449,7 +456,6 @@
     nnSvg.innerHTML = `<rect class="nn-raycast" x="0" y="0" width="${W}" height="${H}" fill="transparent"></rect>` + lines + nodes;
   }
 
-  // NEW: helper to count total fully-connected edges between layers
   function countConnections(shape){
     let total = 0;
     for (let i = 0; i < shape.length - 1; i++){
@@ -473,7 +479,7 @@
 
     const shape = [...nn.layers];
     const neurons = shape.reduce((a,b)=>a+b,0);
-    const connections = countConnections(shape); // NEW
+    const connections = countConnections(shape);
 
     if (nnInputAuto) nnInputAuto.textContent = String(inputCount);
     if (nnOutputCount) nnOutputCount.textContent = String(out);
@@ -485,15 +491,15 @@
       } else if (nn.layers.length > caps.LAYERS_MAX) {
         nnWarn.style.display = '';
         nnWarn.textContent = `Too many layers (>${caps.LAYERS_MAX}).`;
-      } else if (createCustomRays.length > RAY_MAX) {
+      } else if (createCustomRays.length > caps.RAY_MAX) {
         nnWarn.style.display = '';
-        nnWarn.textContent = `Max ${RAY_MAX} rays allowed.`;
+        nnWarn.textContent = `Max ${caps.RAY_MAX} rays allowed.`;
       } else {
         nnWarn.style.display = 'none';
         nnWarn.textContent = '';
       }
     }
-    if (nnSummary) nnSummary.textContent = `Shape: [${shape.join(', ')}] • Layers: ${shape.length} • Neurons: ${neurons} • Connections: ${connections}`; // UPDATED
+    if (nnSummary) nnSummary.textContent = `Shape: [${shape.join(', ')}] • Layers: ${shape.length} • Neurons: ${neurons} • Connections: ${connections}`;
   }
 
   function renderAll(){
@@ -506,9 +512,8 @@
 
   function sensorsChanged(){ renderAll(); }
 
-  // Listen to both toggles
-  nnOutput3?.addEventListener('change', sensorsChanged); // Handbrake
-  nnOutput4?.addEventListener('change', sensorsChanged); // Brake
+  nnOutput3?.addEventListener('change', sensorsChanged); 
+  nnOutput4?.addEventListener('change', sensorsChanged); 
 
   nnXavierInit?.addEventListener('change', () => { previewWeights = null; previewShape = null; sensorsChanged(); });
 
@@ -573,9 +578,9 @@
       );
       throw new Error('too many layers');
     }
-    if (createCustomRays.length > RAY_MAX) {
+    if (createCustomRays.length > caps.RAY_MAX) {
       setCStatus(
-        `Cannot create: max ${RAY_MAX} rays allowed.`,
+        `Cannot create: max ${caps.RAY_MAX} rays allowed.`,
         'danger'
       );
       throw new Error('too many rays');
@@ -592,12 +597,9 @@
       ({ weights, biases } = buildZeroWeightsAndBiases(shape));
     }
 
-    // UPDATED: outputs array reflects individual toggles and fixed indices
-    // Base controls always present
-    let outputs = [0, 1]; // 0=throttle, 1=steer
-    if (nnOutput4?.checked) outputs.push(3); // 3=brake
-    if (nnOutput3?.checked) outputs.push(2); // 2=handbrake
-    // Order will be [0,1,3,2] if both toggles are enabled, as requested.
+    let outputs = [0, 1]; 
+    if (nnOutput4?.checked) outputs.push(3); 
+    if (nnOutput3?.checked) outputs.push(2); 
 
     const obj = {
       Id: (crypto.randomUUID ? crypto.randomUUID() : 'new-ai'),
@@ -607,7 +609,7 @@
         InputShape: shape[0],
         OutputShape: out,
         NeuronsCount: shape.reduce((a,b)=>a+b,0),
-        ConnectionsCount: countConnections(shape), // NEW: persisted in output
+        ConnectionsCount: countConnections(shape),
         Weights: weights,
         Biases:  biases
       },
@@ -622,9 +624,9 @@
     return obj;
   }
 
-  const STORAGE_KEY  = 'evoCreator:v1';          
-  const OUTPUT_KEY   = 'evoCreator:lastOutput';  
-  const AUTOLOAD_KEY = 'evoCreator:autoLoad';    
+  const STORAGE_KEY  = 'evoCreator:v1';
+  const OUTPUT_KEY   = 'evoCreator:lastOutput';
+  const AUTOLOAD_KEY = 'evoCreator:autoLoad';
 
   function safeStorage() {
     try { const t='__test__'; localStorage.setItem(t,'1'); localStorage.removeItem(t); return localStorage; }
@@ -638,9 +640,9 @@
   function collectState() {
     return {
       nnLayers: [...nn.layers],
-      nnOutput3: !!nnOutput3?.checked,     // Handbrake
-      nnOutput4: !!nnOutput4?.checked,     // Brake (new)
-      nnXavierInit: !!nnXavierInit?.checked,     
+      nnOutput3: !!nnOutput3?.checked,     
+      nnOutput4: !!nnOutput4?.checked,     
+      nnXavierInit: !!nnXavierInit?.checked,
       devOverride: !!devOverride?.checked,
       ovMaxLayers: Number(ovMaxLayers?.value || 20),
       ovMaxNodes:  Number(ovMaxNodes?.value  || 64),
@@ -726,8 +728,8 @@
     try {
       const created = createFromScratch();
       if (outputPreview) outputPreview.textContent = fmt(created);
-      saveLastOutput(created); 
-      setCStatus('Created object');
+      saveLastOutput(created);
+      setCStatus('Created object', 'ok');
       triggerDownload('new_ai', created);
     } catch (e) {  }
   });
