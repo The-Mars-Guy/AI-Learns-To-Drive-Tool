@@ -18,6 +18,7 @@
           </label>
           <button id="loadSessionBtn" class="btn ghost">Load last session</button>
           <button id="clearCacheBtn" class="btn ghost">Clear saved inputs</button>
+          <span id="cStatus" class="pill" role="status" aria-live="polite"></span>
         </div>
       </section>
 
@@ -82,14 +83,22 @@
           <div class="col">
             <div class="visual-box">
               <div class="visual-title">Network preview</div>
-              <label class="row tight" style="align-items:center">
-				  <input type="checkbox" id="nnXavierInit" /> Use Xavier initialization
-				</label>
-				<label class="row tight" style="align-items:center">
-				  <input type="checkbox" id="nnPresetOutBias" />
-				  Preset output bias [0, 0.1, -0.1, -0.1]
-				</label>
-              <svg id="nnSvg" width="100%" height="420" viewBox="0 0 980 380" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Neural network diagram">
+
+              <div class="row tight" style="align-items:center; gap:12px; margin-bottom:8px;">
+                <label class="row tight" style="align-items:center">
+                  <input type="checkbox" id="nnXavierWeights" /> Xavier init: Weights
+                </label>
+                <label class="row tight" style="align-items:center">
+                  <input type="checkbox" id="nnXavierBiases" /> Xavier init: Biases
+                </label>
+                <label class="row tight" style="align-items:center">
+                  <input type="checkbox" id="nnPresetOutBias" />
+                  Preset output bias [0, 0.1, -0.1, -0.1]
+                </label>
+              </div>
+
+              <svg id="nnSvg" width="100%" height="420" viewBox="0 0 980 380"
+                   preserveAspectRatio="xMidYMid meet" role="img" aria-label="Neural network diagram">
                 <rect class="nn-raycast" x="0" y="0" width="980" height="380" fill="transparent"></rect>
               </svg>
             </div>
@@ -153,7 +162,7 @@
     </div>
   </div>
 
-  
-  <script type="module" src="js/app.js"></script>
+  <!-- Point to the ES module entry in /js -->
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
