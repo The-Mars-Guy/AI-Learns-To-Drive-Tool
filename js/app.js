@@ -5,7 +5,7 @@ import { cStatus, outputPreview, createBtn, autoLoadToggle, loadSessionBtn, clea
 import { fmt, setCStatus, debounce } from './utils.js';
 import { getCaps, applyOverrideUI } from './caps.js';
 import { collectState, applyState, saveState, loadState, clearState, saveLastOutput, loadLastOutput, getLS, AUTOLOAD_KEY } from './storage.js';
-import { createCustomRays, renderRaysList, renderRaysSvg, wireSensorButtons } from './sensors.js';
+import { createCustomRays, renderRaysList, renderRaysSvg, wireSensorButtons } from './sensors.js?v=4';
 import { nn, wireHiddenButtons, renderHiddenList, renderNNSvg, renderSummary, getOutputCount, buildZeroWeightsAndBiases, buildXavierWeightsAndBiases, countConnections } from './nn.js';
 
 const EXTRAS_META = {
@@ -15,17 +15,23 @@ const EXTRAS_META = {
   grip: null
 };
 
+const FIXED_PARAM_TYPES = new Set([
+  'accelerationFront',
+  'accelerationSide',
+  'distanceFromWall'
+]);
+
 function extraInputId(type, key){ return `extra_${type}_${key}`; }
 
 function ensureExtraControls(){
   document.querySelectorAll('.c-extra').forEach(cb => {
     const type = cb.value;
     const meta = EXTRAS_META[type];
-    if (!meta) return; 
+    if (!meta) return;
 
     const key = meta.label;
     const id  = extraInputId(type, key);
-    if (cb.closest('label')?.querySelector(`#${id}`)) return; 
+    if (cb.closest('label')?.querySelector(`#${id}`)) return; // already added
 
     const wrap = document.createElement('span');
     wrap.style.marginLeft = '6px';
@@ -33,23 +39,33 @@ function ensureExtraControls(){
     wrap.style.alignItems = 'center';
     wrap.style.gap = '4px';
 
+    const isFixed = FIXED_PARAM_TYPES.has(type);
+
     const lab = document.createElement('span');
-    lab.className = 'hint';
-    lab.textContent = `${key}:`;
+    lab.textContent = key + (isFixed ? ' (locked)' : '');
 
     const inp = document.createElement('input');
     inp.type = 'number';
     inp.id = id;
-    inp.className = 'btn in mini';  
+    inp.className = 'btn in mini';
     inp.style.width = '60px';
     inp.step = String(meta.step ?? 1);
     if (Number.isFinite(meta.min)) inp.min = String(meta.min);
     inp.value = String(meta.default);
 
-    const syncDisabled = () => { inp.disabled = !cb.checked; };
-    syncDisabled(); 
-    cb.addEventListener('change', () => { syncDisabled(); sensorsChanged(); });
-    inp.addEventListener('input', () => sensorsChanged());
+    if (isFixed) {
+      // Always non-editable; value is fixed
+      inp.disabled = true;
+      inp.title = 'This value is locked.';
+      // Checkbox still controls whether the extra is active
+      cb.addEventListener('change', () => { /* just trigger recompute */ sensorsChanged(); });
+    } else {
+      // Old behavior for non-fixed extras (if you add any in the future)
+      const syncDisabled = () => { inp.disabled = !cb.checked; };
+      syncDisabled();
+      cb.addEventListener('change', () => { syncDisabled(); sensorsChanged(); });
+      inp.addEventListener('input', () => sensorsChanged());
+    }
 
     wrap.appendChild(lab);
     wrap.appendChild(inp);

@@ -1,6 +1,8 @@
 import { getCaps } from './caps.js';
-import { cCustomDeg, cCustomLen, cAddRay, cClearRays, cMirrorAdd, cMirrorAll,
-  cCustomList, rayCountBadge, raysSvg, vehicleKind, carImageScale, carImageAngle } from './dom.js';
+import {
+  cCustomDeg, cCustomLen, cAddRay, cClearRays, cMirrorAdd, cMirrorAll,
+  cCustomList, rayCountBadge, raysSvg, vehicleKind, carImageScale, carImageAngle
+} from './dom.js';
 
 export const VEHICLE_SPRITES = {
   formula:    { src: 'images/formula.png',    w: 90,  h: 190 },
@@ -10,6 +12,11 @@ export const VEHICLE_SPRITES = {
 };
 
 export const createCustomRays = [];
+
+// Auto-computed length from angle: 200 + 600*|cos(theta)|
+export const lengthForDeg = (deg) =>
+  200 + 600 * Math.abs(Math.cos((deg * Math.PI) / 180));
+
 let RAY_ID_SEQ = 1;
 
 export let raySortMode = 'angle';
@@ -38,13 +45,11 @@ export function hasRay(deg, len){
   return createCustomRays.some(r => r.Degrees === d && r.Length === len);
 }
 
-export function pushRay(deg, len){
+export function pushRay(deg){
   const caps = getCaps();
-  if (createCustomRays.length >= caps.RAY_MAX) {
-    return null;
-  }
+  if (createCustomRays.length >= caps.RAY_MAX) return null;
   const d = normDeg(deg);
-  const l = Math.max(0, Math.round(Number(len||0)));
+  const l = Math.round(lengthForDeg(d));
   if (!hasRay(d, l)) {
     const ray = { id: RAY_ID_SEQ++, Degrees: d, Length: l };
     createCustomRays.push(ray);
@@ -61,7 +66,7 @@ export function sortedView(){
 export function renderRaysList(onChange){
   if (!cCustomList) return;
   if (createCustomRays.length === 0){
-    cCustomList.innerHTML = `<div class="hint">No rays yet. Add with angle (−180…180) and length.</div>`;
+    cCustomList.innerHTML = `<div class="hint">No rays yet. Add with angle (−180…180). Length is auto-computed.</div>`;
   } else {
     const view = sortedView();
     cCustomList.innerHTML = view.map((r, idx) => `
@@ -85,10 +90,8 @@ export function renderRaysList(onChange){
           const r = createCustomRays[idx];
           let nd = prompt(`Degrees (−180…180):`, r.Degrees);
           if (nd === null) return;
-          let nl = prompt('Length (≥0):', r.Length);
-          if (nl === null) return;
           const d = normDeg(Number(nd));
-          const l = Math.max(0, Math.round(Number(nl)));
+          const l = Math.round(lengthForDeg(d));
           createCustomRays[idx] = { ...r, Degrees: d, Length: l };
         }
         onChange?.();
@@ -177,10 +180,10 @@ export function renderRaysSvg(){
 }
 
 export function wireSensorButtons(onChange, notify){
+  // Add ray: compute length from angle
   cAddRay?.addEventListener('click', () => {
     const d = Number(cCustomDeg?.value || 0);
-    const l = Number(cCustomLen?.value || 900);
-    const added = pushRay(d, l);
+    const added = pushRay(d);
     if (!added) {
       const caps = getCaps();
       notify?.(`Ray not added (duplicate or max ${caps.RAY_MAX})`, 'warn');
@@ -190,21 +193,31 @@ export function wireSensorButtons(onChange, notify){
     if (added && cMirrorAdd?.checked) {
       const m = normDeg(-added.Degrees);
       if (!(added.Degrees === 0 || Math.abs(added.Degrees) === 180)) {
-        pushRay(m, l);
+        pushRay(m);
       }
     }
     onChange?.();
   });
 
   cClearRays?.addEventListener('click', () => { createCustomRays.length = 0; onChange?.(); });
+
   cMirrorAll?.addEventListener('click', () => {
     const snapshot = createCustomRays.slice();
     for (const r of snapshot) {
       const m = normDeg(-r.Degrees);
       if (!(r.Degrees === 0 || Math.abs(r.Degrees) === 180)) {
-        pushRay(m, r.Length);
+        pushRay(m);
       }
     }
     onChange?.();
   });
+
+  // Keep displayed length in sync with angle and make it read-only
+  if (cCustomLen) { cCustomLen.disabled = true; }
+  const syncLenFromDeg = () => {
+    const d = Number(cCustomDeg?.value || 0);
+    if (cCustomLen) cCustomLen.value = String(Math.round(lengthForDeg(d)));
+  };
+  cCustomDeg?.addEventListener('input', syncLenFromDeg);
+  syncLenFromDeg();
 }
