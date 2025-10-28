@@ -6,18 +6,19 @@ export const VEHICLE_SPRITES = {
   formula:    { src: 'images/formula.png',    w: 90,  h: 190 },
   rally:      { src: 'images/rally.png',      w: 110, h: 200 },
   snowmobile: { src: 'images/snowmobile.png', w: 80,  h: 220 },
-  truck:      { src: 'images/truck.png',      w: 100, h: 280 
-  // Keep displayed length in sync with angle and make it read-only
-  if (cCustomLen) { cCustomLen.disabled = true; }
-  const syncLenFromDeg = () => {
-    const d = Number(cCustomDeg?.value || 0);
-    if (cCustomLen) cCustomLen.value = String(Math.round(lengthForDeg(d)));
-  };
-  cCustomDeg?.addEventListener('input', syncLenFromDeg);
-  syncLenFromDeg();
-
-}
+  truck:      { src: 'images/truck.png',      w: 100, h: 280 }
 };
+
+// Keep displayed length in sync with angle and make it read-only
+if (cCustomLen) {
+  cCustomLen.disabled = true;
+}
+const syncLenFromDeg = () => {
+  const d = Number(cCustomDeg?.value || 0);
+  if (cCustomLen) cCustomLen.value = String(Math.round(lengthForDeg(d)));
+};
+cCustomDeg?.addEventListener('input', syncLenFromDeg);
+syncLenFromDeg();
 
 export const createCustomRays = [];
 
