@@ -53,7 +53,7 @@
 					<div class="hint"> Custom raycasts only. Angle −180 → 180 (0 is up). Extras count toward input size. <strong>Max 13 rays.</strong></div>
 					<div class="split-2">
 						<div class="col">
-							<div class="row tight" style="margin-top:8px"><label>Degrees <input id="cCustomDeg" type="number" step="5" value="0" class="btn in" /></label><label>Length (auto) <input id="cCustomLen" type="number" min="0" step="1" value="900" class="btn in" / disabled title="Computed from angle: 200 + 600 · |cos(θ)|"></label><label class="row tight" style="align-items:center"><input id="cMirrorAdd" type="checkbox" /> Mirror</label></div>
+							<div class="row tight" style="margin-top:8px"><label>Degrees <input id="cCustomDeg" type="number" step="5" value="0" class="btn in" /></label><label>Length <input id="cCustomLen" type="number" min="0" step="1" value="900" class="btn in" /></label><label class="row tight" style="align-items:center"><input id="cMirrorAdd" type="checkbox" /> Mirror</label></div>
 							<div class="row tight"><button id="cAddRay" class="btn">Add raycast</button><button id="cClearRays" class="btn">Clear all</button><button id="cMirrorAll" class="btn">Mirror all existing</button><span id="rayCountBadge" class="pill">0 rays</span></div>
 							<div class="panel" id="cCustomList"></div>
 						</div>

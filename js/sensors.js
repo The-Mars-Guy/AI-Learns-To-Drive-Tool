@@ -9,22 +9,7 @@ export const VEHICLE_SPRITES = {
   truck:      { src: 'images/truck.png',      w: 100, h: 280 }
 };
 
-// Keep displayed length in sync with angle and make it read-only
-if (cCustomLen) {
-  cCustomLen.disabled = true;
-}
-const syncLenFromDeg = () => {
-  const d = Number(cCustomDeg?.value || 0);
-  if (cCustomLen) cCustomLen.value = String(Math.round(lengthForDeg(d)));
-};
-cCustomDeg?.addEventListener('input', syncLenFromDeg);
-syncLenFromDeg();
-
 export const createCustomRays = [];
-
-// Auto-computed length from angle: 200 + 600*|cos(theta)|
-export const lengthForDeg = (deg) => 200 + 600 * Math.abs(Math.cos((deg * Math.PI) / 180));
-
 let RAY_ID_SEQ = 1;
 
 export let raySortMode = 'angle';
@@ -59,7 +44,7 @@ export function pushRay(deg, len){
     return null;
   }
   const d = normDeg(deg);
-  const l = Math.round(lengthForDeg(d));
+  const l = Math.max(0, Math.round(Number(len||0)));
   if (!hasRay(d, l)) {
     const ray = { id: RAY_ID_SEQ++, Degrees: d, Length: l };
     createCustomRays.push(ray);
@@ -100,8 +85,10 @@ export function renderRaysList(onChange){
           const r = createCustomRays[idx];
           let nd = prompt(`Degrees (−180…180):`, r.Degrees);
           if (nd === null) return;
+          let nl = prompt('Length (≥0):', r.Length);
+          if (nl === null) return;
           const d = normDeg(Number(nd));
-          const l = Math.round(lengthForDeg(d));
+          const l = Math.max(0, Math.round(Number(nl)));
           createCustomRays[idx] = { ...r, Degrees: d, Length: l };
         }
         onChange?.();
@@ -203,7 +190,7 @@ export function wireSensorButtons(onChange, notify){
     if (added && cMirrorAdd?.checked) {
       const m = normDeg(-added.Degrees);
       if (!(added.Degrees === 0 || Math.abs(added.Degrees) === 180)) {
-        pushRay(m);
+        pushRay(m, l);
       }
     }
     onChange?.();
@@ -215,7 +202,7 @@ export function wireSensorButtons(onChange, notify){
     for (const r of snapshot) {
       const m = normDeg(-r.Degrees);
       if (!(r.Degrees === 0 || Math.abs(r.Degrees) === 180)) {
-        pushRay(m);
+        pushRay(m, r.Length);
       }
     }
     onChange?.();
